@@ -2,7 +2,7 @@
 
 
 #import the dataset
-data = spark.read.csv("dbfs:/FileStore/tables/automotive_sales-1.csv", inferSchema = True, header = True, sep = ",").cache()
+data = spark.read.csv("dbfs:/FileStore/tables/automotive_sales.csv", inferSchema = True, header = True, sep = ",").cache()
 
 #check the data type of each feature
 data.printSchema()
