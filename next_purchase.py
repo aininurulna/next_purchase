@@ -1,36 +1,18 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
+#Random Forest Regressor
 
 
 #import the dataset
 data = spark.read.csv("dbfs:/FileStore/tables/automotive_sales-1.csv", inferSchema = True, header = True, sep = ",").cache()
 
-
-# In[ ]:
-
-
 #check the data type of each feature
 data.printSchema()
-
-
-# In[ ]:
-
 
 #change the new_purchase_date in case it's not date type yet
 from pyspark.sql.functions import unix_timestamp, from_unixtime, to_date
 data = data.withColumn('new_purchase_date', to_date(unix_timestamp('purchase_date', 'yyyy/MM/dd').cast("timestamp"))).drop('purchase_date')
 
-
-# In[ ]:
-
-
 #sort by cust and purchase date
 data = data.orderBy(["cust", "new_purchase_date"], ascending=True)
-
-
-# In[ ]:
 
 
 #calculating the days interval between purchases for each customer which will be our target variable
@@ -41,10 +23,6 @@ data = data.withColumn("timeInterval", datediff(data.new_purchase_date, lag(data
     .orderBy("new_purchase_date"))))
 data = data.na.fill({'timeInterval': 0})
 
-
-# In[ ]:
-
-
 #create flag of the i-th number of purchase (1st time, 2nd time, etc.) as a new feature
 from pyspark.sql.window import Window
 from pyspark.sql.functions import rank, dense_rank
@@ -53,10 +31,6 @@ from pyspark.sql.functions import unix_timestamp, from_unixtime, to_date
 window = Window.partitionBy(data['cust']).orderBy(data['new_purchase_date'])
 data = data.select('*', rank().over(window).alias('flag'))
 
-
-# In[ ]:
-
-
 #evaluate the correlation of numerical features with the target variable
 import six
 
@@ -64,10 +38,8 @@ corr_cols = ["age"]
 for i in corr_cols:
     if not( isinstance(data.select(i).take(1)[0][0], six.string_types)):
         print( "Correlation to timeInterval for ", i, data.stat.corr('timeInterval',i))
-
-
-# In[ ]:
-
+        
+#build a pipeline to encode the categorical features
 
 from pyspark.ml import Pipeline
 from pyspark.ml.feature import StringIndexer, OneHotEncoder
@@ -82,20 +54,12 @@ for cat_col in cat_cols:
 pipeline = Pipeline(stages=stages)
 data2 = pipeline.fit(data).transform(data)
 
-
-# In[ ]:
-
-
 #split the date into training and testing with set up seed for consistency
 (train, test) = data2.randomSplit([0.8, 0.2], seed=123)
 train.cache()
 test.cache()
 
-
-# In[ ]:
-
-
-# TODO: Build a better Regression pipeline
+# build a pipeline of VectorAssembler and rfr
 from pyspark.ml import Pipeline
 from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.feature import VectorAssembler
@@ -130,16 +94,9 @@ rmserfr = evaluator.evaluate(predictionsDFrfr)
 
 print("Test RMSE Random Forest Regressor = %f" % rmserfr)
 
-
-# In[ ]:
-
-
 #compare the RMSE with the average to get the sense of how well the model works as a simple analysis
 from pyspark.sql.functions import col, avg
 data.agg(avg(col("timeInterval"))).show()
-
-
-# In[ ]:
 
 
 
