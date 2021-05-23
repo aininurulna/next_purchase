@@ -24,10 +24,6 @@ data = data.withColumn("timeInterval", datediff(data.new_purchase_date, lag(data
 data = data.na.fill({'timeInterval': 0})
 
 #create flag of the i-th number of purchase (1st time, 2nd time, etc.) as a new feature
-from pyspark.sql.window import Window
-from pyspark.sql.functions import rank, dense_rank
-from pyspark.sql.functions import unix_timestamp, from_unixtime, to_date
-
 window = Window.partitionBy(data['cust']).orderBy(data['new_purchase_date'])
 data = data.select('*', rank().over(window).alias('flag'))
 
@@ -60,7 +56,6 @@ train.cache()
 test.cache()
 
 # build a pipeline of VectorAssembler and rfr
-from pyspark.ml import Pipeline
 from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.feature import VectorAssembler
 
@@ -95,7 +90,6 @@ rmserfr = evaluator.evaluate(predictionsDFrfr)
 print("Test RMSE Random Forest Regressor = %f" % rmserfr)
 
 #compare the RMSE with the average to get the sense of how well the model works as a simple analysis
-from pyspark.sql.functions import col, avg
 data.agg(avg(col("timeInterval"))).show()
 
 
