@@ -1,7 +1,7 @@
 # next_purchase
 Predicting Next Purchase with PySpark
 
-A Random Forest Classifier implemented in PySpark. The spyspark.ml.regression library was used to import the RandomForestRegressor. 
+A Random Forest Regressor implemented in PySpark. The spyspark.ml.regression library was used to import the RandomForestRegressor. 
 pyspark.ml.regression. The following arguments was passed to the object:
 
 n_estimators = 10
